@@ -13,11 +13,10 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Подгружаем переменные из .env файла (для локального тестирования)
+# Подгружаем переменные из .env файла
 load_dotenv()
 
 # ================= НАСТРОЙКИ =================
-# Токен безопасно берется из переменных окружения (Render) или файла .env (ПК)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=BOT_TOKEN)
@@ -29,6 +28,7 @@ class JournalState(StatesGroup):
 # ================= ДАННЫЕ РАСПИСАНИЯ =================
 TIMES = {1: "08:00-09:30", 2: "09:45-11:15", 3: "11:30-13:00", 4: "13:15-14:45", 5: "15:00-16:30"}
 
+# В словаре ключи 1, 2, 3, 4 соответствуют ПОДГРУППАМ, так как расписание зависит от подгруппы
 SCHEDULE = {
     "1": {
         "Понедельник": {
@@ -272,24 +272,28 @@ async def fetch_journal_absences(idnp: str) -> str:
                         
                     elif len(tds) == 3:
                         raw_date = tds[1].text.strip()
-                        mark = tds[2].text.strip().lower()
+                        mark = tds[2].text.strip().lower() # Здесь либо пустота, либо "a", либо оценка
                         
                         date_parts = raw_date.split(' ')[0].split('.')
                         short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                         
-                        key = f"📖 {current_subject}\n👨‍🏫 {current_teacher}"
+                        key = f"📖 **{current_subject}**\n👨‍‍🏫 *{current_teacher}*"
                         if key not in attendance_dict:
                             attendance_dict[key] = []
                             
-                        if 'a' in mark:
+                        # Проверяем значение в 3-й колонке
+                        if mark == 'a':
                             attendance_dict[key].append(f"❌ {short_date}")
-                        else:
+                        elif mark == '':
                             attendance_dict[key].append(f"✅ {short_date}")
+                        else:
+                            # Если там не "a" и не пусто — значит стоит оценка
+                            attendance_dict[key].append(f"💭 Оценка: {mark}, {short_date}")
                 
                 if not attendance_dict:
-                    return "Данные о посещаемости отсутствуют."
+                    return "Данные о посещаемости и оценках отсутствуют."
                 
-                final_text = "📊 Ваша посещаемость:\n\n"
+                final_text = "📊 **Ваши оценки и посещаемость:**\n\n"
                 for subj_header, logs in attendance_dict.items():
                     final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
                     
@@ -312,12 +316,14 @@ def get_current_week_info():
     if target_date < start_date: target_date = start_date
     return "even" if ((target_date - start_date).days // 7) % 2 != 0 else "odd"
 
-def format_day_schedule(group_id, day):
+def format_day_schedule(group_id, subgroup_id, day):
     week_type = get_current_week_info()
     week_label = "Четная" if week_type == "even" else "Нечетная"
-    text = f"🎓 Группа {group_id} | 📅 {day}\n🗓 Неделя: {week_label}\n\n"
+    text = f"🎓 Группа {group_id} | 👥 Подгруппа {subgroup_id} | 📅 {day}\n🗓 Неделя: {week_label}\n\n"
     active_lessons = {}
-    for pair_num, variations in SCHEDULE[str(group_id)].get(day, {}).items():
+    
+    # Берем расписание строго по номеру подгруппы
+    for pair_num, variations in SCHEDULE[str(subgroup_id)].get(day, {}).items():
         if "all" in variations: active_lessons[pair_num] = variations["all"]
         elif week_type in variations: active_lessons[pair_num] = variations[week_type]
             
@@ -335,18 +341,31 @@ def format_day_schedule(group_id, day):
 # ================= КЛАВИАТУРЫ =================
 def get_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="🎓 Группа 1", callback_data="group_1"), InlineKeyboardButton(text="🎓 Группа 2", callback_data="group_2")],
-        [InlineKeyboardButton(text="🎓 Группа 3", callback_data="group_3"), InlineKeyboardButton(text="🎓 Группа 4", callback_data="group_4")],
-        [InlineKeyboardButton(text="🌤 Погода", callback_data="weather_today"), InlineKeyboardButton(text="📅 Прогноз", callback_data="weather_week")],
-        [InlineKeyboardButton(text="📖 Электронный журнал (Посещаемость)", callback_data="open_journal")]
+        [InlineKeyboardButton(text="🎓 Группа 1", callback_data="group_1"), 
+         InlineKeyboardButton(text="🎓 Группа 2", callback_data="group_2"),
+         InlineKeyboardButton(text="🎓 Группа 3", callback_data="group_3")],
+        [InlineKeyboardButton(text="🌤 Погода", callback_data="weather_today"), 
+         InlineKeyboardButton(text="📅 Прогноз", callback_data="weather_week")],
+        [InlineKeyboardButton(text="📖 Электронный журнал (Оценки и Пропуски)", callback_data="open_journal")]
     ])
 
-def get_days_kb(group_id):
+def get_subgroups_kb(group_id):
     return InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="ПН", callback_data=f"day_{group_id}_Понедельник"), InlineKeyboardButton(text="ВТ", callback_data=f"day_{group_id}_Вторник"),
-         InlineKeyboardButton(text="СР", callback_data=f"day_{group_id}_Среда"), InlineKeyboardButton(text="ЧТ", callback_data=f"day_{group_id}_Четверг"),
-         InlineKeyboardButton(text="ПТ", callback_data=f"day_{group_id}_Пятница")],
-        [InlineKeyboardButton(text="🔙 К выбору", callback_data="back_main")]
+        [InlineKeyboardButton(text="👥 Подгруппа 1", callback_data=f"subgroup_{group_id}_1"),
+         InlineKeyboardButton(text="👥 Подгруппа 2", callback_data=f"subgroup_{group_id}_2")],
+        [InlineKeyboardButton(text="👥 Подгруппа 3", callback_data=f"subgroup_{group_id}_3"),
+         InlineKeyboardButton(text="👥 Подгруппа 4", callback_data=f"subgroup_{group_id}_4")],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back_main")]
+    ])
+
+def get_days_kb(group_id, subgroup_id):
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="ПН", callback_data=f"day_{group_id}_{subgroup_id}_Понедельник"),
+         InlineKeyboardButton(text="ВТ", callback_data=f"day_{group_id}_{subgroup_id}_Вторник"),
+         InlineKeyboardButton(text="СР", callback_data=f"day_{group_id}_{subgroup_id}_Среда"),
+         InlineKeyboardButton(text="ЧТ", callback_data=f"day_{group_id}_{subgroup_id}_Четверг"),
+         InlineKeyboardButton(text="ПТ", callback_data=f"day_{group_id}_{subgroup_id}_Пятница")],
+        [InlineKeyboardButton(text="🔙 К выбору подгруппы", callback_data=f"group_{group_id}")]
     ])
 
 # ================= ХЭНДЛЕРЫ =================
@@ -359,7 +378,7 @@ async def cmd_start(message: Message, state: FSMContext):
 async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     await state.set_state(JournalState.waiting_for_idnp)
     await callback.message.edit_text(
-        text="Введите ваш IDNP (Задняя часть паспорта):",
+        text="Введите ваш IDNP (Задняя часть паспорта).",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Отмена", callback_data="back_main")]])
     )
     await callback.answer()
@@ -370,23 +389,49 @@ async def process_idnp(message: Message, state: FSMContext):
     if not idnp.isdigit() or len(idnp) != 13:
         await message.answer("⚠️ Неверный формат. IDNP должен состоять ровно из 13 цифр. Попробуйте еще раз или нажмите /start.")
         return
-    wait_msg = await message.answer("⏳ Подключаюсь к журналу USM, загружаю посещаемость...")
+    wait_msg = await message.answer("⏳ Подключаюсь к журналу USM, загружаю данные...")
     result = await fetch_journal_absences(idnp)
     await state.clear()
     
     await wait_msg.edit_text(result, reply_markup=get_main_kb(), parse_mode="HTML")
 
+# --- Обработка выбора группы ---
 @dp.callback_query(F.data.startswith("group_"))
 async def select_group(callback: CallbackQuery):
     group_id = callback.data.split("_")[1]
-    day = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Понедельник", "Понедельник"][datetime.datetime.now().weekday()]
-    await callback.message.edit_text(text=format_day_schedule(group_id, day), reply_markup=get_days_kb(group_id))
+    await callback.message.edit_text(
+        text=f"🎓 Вы выбрали Группу {group_id}.\n\nПожалуйста, выберите вашу подгруппу:",
+        reply_markup=get_subgroups_kb(group_id)
+    )
     await callback.answer()
 
+# --- Обработка выбора подгруппы ---
+@dp.callback_query(F.data.startswith("subgroup_"))
+async def select_subgroup(callback: CallbackQuery):
+    parts = callback.data.split("_")
+    group_id = parts[1]
+    subgroup_id = parts[2]
+    
+    day = ["Понедельник", "Вторник", "Среда", "Четверг", "Пятница", "Понедельник", "Понедельник"][datetime.datetime.now().weekday()]
+    
+    await callback.message.edit_text(
+        text=format_day_schedule(group_id, subgroup_id, day), 
+        reply_markup=get_days_kb(group_id, subgroup_id)
+    )
+    await callback.answer()
+
+# --- Обработка выбора дня недели ---
 @dp.callback_query(F.data.startswith("day_"))
 async def select_day(callback: CallbackQuery):
-    _, group_id, day = callback.data.split("_")
-    try: await callback.message.edit_text(text=format_day_schedule(group_id, day), reply_markup=get_days_kb(group_id))
+    parts = callback.data.split("_")
+    group_id = parts[1]
+    subgroup_id = parts[2]
+    day = parts[3]
+    try: 
+        await callback.message.edit_text(
+            text=format_day_schedule(group_id, subgroup_id, day), 
+            reply_markup=get_days_kb(group_id, subgroup_id)
+        )
     except Exception: pass 
     await callback.answer()
 
@@ -418,6 +463,9 @@ def run_web():
     app.run(host="0.0.0.0", port=port)
 
 def start_web_server():
+    import logging
+    logging.getLogger('werkzeug').setLevel(logging.ERROR)
+    
     t = threading.Thread(target=run_web)
     t.daemon = True
     t.start()
