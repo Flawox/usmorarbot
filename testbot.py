@@ -1,8 +1,11 @@
 import asyncio
 import datetime
 import os
+import threading
 import aiohttp
 from bs4 import BeautifulSoup
+from flask import Flask
+from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
@@ -10,12 +13,11 @@ from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 
-# Подключаем загрузку переменных из файла .env
-from dotenv import load_dotenv
+# Подгружаем переменные из .env файла (для локального тестирования)
 load_dotenv()
 
 # ================= НАСТРОЙКИ =================
-# Бот автоматически возьмет токен из скрытого файла .env
+# Токен безопасно берется из переменных окружения (Render) или файла .env (ПК)
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 bot = Bot(token=BOT_TOKEN)
@@ -212,7 +214,6 @@ async def fetch_journal_absences(idnp: str) -> str:
     connector = aiohttp.TCPConnector(ssl=False)
     async with aiohttp.ClientSession(connector=connector) as session:
         try:
-            # Шаг 1: Получаем скрытые токены ASP.NET
             async with session.get(url, timeout=10) as get_response:
                 if get_response.status != 200:
                     return "❌ Ошибка подключения к сайту USM при попытке входа."
@@ -233,7 +234,6 @@ async def fetch_journal_absences(idnp: str) -> str:
                     'btLogin': 'Login'
                 }
                 
-            # Шаг 2: Авторизуемся
             async with session.post(url, data=payload, timeout=10) as post_response:
                 if post_response.status != 200:
                     return "❌ Ошибка при отправке данных авторизации."
@@ -253,32 +253,27 @@ async def fetch_journal_absences(idnp: str) -> str:
                 current_subject = "Неизвестный предмет"
                 current_teacher = "Неизвестный преподаватель"
                 
-                # Шаг 3: Читаем таблицу
                 for row in table.find_all('tr'):
                     tds = row.find_all('td')
                     if not tds:
                         continue
                         
-                    # 1. Если это заголовок предмета
                     if len(tds) == 1 and tds[0].get('colspan') == '3':
                         b_tag = tds[0].find('b')
                         if b_tag:
                             subj_text = b_tag.text.strip()
                             if "semestru" not in subj_text.lower() and "ac" not in subj_text.lower():
                                 current_subject = subj_text
-                                current_teacher = "" # Сбрасываем преподавателя
+                                current_teacher = "" 
                                 
-                    # 2. Если это строка с преподавателем
                     elif len(tds) == 2:
                         teacher_b = tds[1].find('b')
                         current_teacher = teacher_b.text.strip() if teacher_b else tds[1].text.strip()
                         
-                    # 3. Если это строка с датой и отметкой
                     elif len(tds) == 3:
                         raw_date = tds[1].text.strip()
                         mark = tds[2].text.strip().lower()
                         
-                        # Сокращаем дату "04.09.2026 11:30" до "04.09" для красоты
                         date_parts = raw_date.split(' ')[0].split('.')
                         short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                         
@@ -286,7 +281,6 @@ async def fetch_journal_absences(idnp: str) -> str:
                         if key not in attendance_dict:
                             attendance_dict[key] = []
                             
-                        # Если стоит буква 'a', ставим крестик. Иначе - галочку
                         if 'a' in mark:
                             attendance_dict[key].append(f"❌ {short_date}")
                         else:
@@ -295,13 +289,10 @@ async def fetch_journal_absences(idnp: str) -> str:
                 if not attendance_dict:
                     return "Данные о посещаемости отсутствуют."
                 
-                # Шаг 4: Формируем красивый вывод
-                final_text = "📊 **Ваша посещаемость:**\n\n"
+                final_text = "📊 Ваша посещаемость:\n\n"
                 for subj_header, logs in attendance_dict.items():
-                    # Соединяем даты через разделитель, чтобы не тратить много строк
                     final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
                     
-                # Защита от лимитов Телеграма по длине сообщения (4096 символов)
                 if len(final_text) > 4000:
                     final_text = final_text[:4000] + "\n... (данные обрезаны)"
                     
@@ -368,7 +359,7 @@ async def cmd_start(message: Message, state: FSMContext):
 async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     await state.set_state(JournalState.waiting_for_idnp)
     await callback.message.edit_text(
-        text="Введите ваш IDNP (Задняя часть паспорта).",
+        text="Введите ваш IDNP (Задняя часть паспорта):",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Отмена", callback_data="back_main")]])
     )
     await callback.answer()
@@ -383,7 +374,6 @@ async def process_idnp(message: Message, state: FSMContext):
     result = await fetch_journal_absences(idnp)
     await state.clear()
     
-    # Обязательно указываем parse_mode="HTML", чтобы жирный текст и курсив отображались корректно
     await wait_msg.edit_text(result, reply_markup=get_main_kb(), parse_mode="HTML")
 
 @dp.callback_query(F.data.startswith("group_"))
@@ -416,19 +406,7 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text="🏛 Расписание USM\n\nВыберите раздел:", reply_markup=get_main_kb())
     await callback.answer()
 
-if __name__ == "__main__":
-    start_web_server() # Запускаем веб-сервер в фоне
-    asyncio.run(main()) # Запускаем телеграм-бота
-
-# ================= ЗАПУСК =================
-async def main():
-    await dp.start_polling(bot)
-
-# --- Микро-веб-сервер для удержания бота в сети на Render ---
-from flask import Flask
-import threading
-import os
-
+# ================= МИКРО-СЕРВЕР ДЛЯ RENDER =================
 app = Flask(__name__)
 
 @app.route('/')
@@ -436,7 +414,6 @@ def home():
     return "USM Bot is running!"
 
 def run_web():
-    # Render передает свой порт через переменную окружения PORT, по умолчанию берем 10000
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
 
@@ -445,13 +422,10 @@ def start_web_server():
     t.daemon = True
     t.start()
 
-if __name__ == "__main__":
-    start_web_server() # Запускаем веб-сервер, который займет нужный порт для Render
-    asyncio.run(main())  # Запускаем телеграм-бота
-def start_web_server():
-    t = threading.Thread(target=run_web)
-    t.daemon = True
-    t.start()
+# ================= ЗАПУСК =================
+async def main():
+    await dp.start_polling(bot)
 
 if __name__ == "__main__":
+    start_web_server()
     asyncio.run(main())
