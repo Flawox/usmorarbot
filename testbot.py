@@ -416,9 +416,42 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
     await callback.message.edit_text(text="🏛 Расписание USM\n\nВыберите раздел:", reply_markup=get_main_kb())
     await callback.answer()
 
+if __name__ == "__main__":
+    start_web_server() # Запускаем веб-сервер в фоне
+    asyncio.run(main()) # Запускаем телеграм-бота
+
 # ================= ЗАПУСК =================
 async def main():
     await dp.start_polling(bot)
+
+# --- Микро-веб-сервер для удержания бота в сети на Render ---
+from flask import Flask
+import threading
+import os
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "USM Bot is running!"
+
+def run_web():
+    # Render передает свой порт через переменную окружения PORT, по умолчанию берем 10000
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+def start_web_server():
+    t = threading.Thread(target=run_web)
+    t.daemon = True
+    t.start()
+
+if __name__ == "__main__":
+    start_web_server() # Запускаем веб-сервер, который займет нужный порт для Render
+    asyncio.run(main())  # Запускаем телеграм-бота
+def start_web_server():
+    t = threading.Thread(target=run_web)
+    t.daemon = True
+    t.start()
 
 if __name__ == "__main__":
     asyncio.run(main())
