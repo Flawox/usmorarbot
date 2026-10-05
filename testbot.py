@@ -171,42 +171,80 @@ SCHEDULE = {
     }
 }
 
-# ================= ЛОГИКА ПОГОДЫ =================
+# ================= ЛОГИКА ПОГОДЫ (OpenWeather) =================
+OW_API_KEY = "10ee9c368fc7dc64b18dae5c7a963d28"
 LAT, LON = 47.0105, 28.8638
-WEATHER_CODES = {
-    0: "Ясно ☀️", 1: "Преимущественно ясно 🌤", 2: "Переменная облачность ⛅️", 3: "Пасмурно ☁️",
-    45: "Туман 🌫", 48: "Иней 🌫",
-    51: "Легкая морось 🌧", 53: "Умеренная морось 🌧", 55: "Густая морось 🌧",
-    61: "Слабый дождь 🌧", 63: "Умеренный дождь 🌧", 65: "Сильный дождь 🌧",
-    71: "Слабый снег ❄️", 73: "Умеренный снег ❄️", 75: "Сильный снег ❄️",
-    80: "Слабый ливень 🌦", 81: "Умеренный ливень 🌧", 82: "Сильный ливень ⛈",
-    95: "Гроза ⛈", 96: "Гроза с градом ⛈", 99: "Сильная гроза ⛈"
+
+# Эмодзи по кодам иконок OpenWeather (день/ночь)
+OW_EMOJIS = {
+    "01d": "☀️", "01n": "🌙",
+    "02d": "🌤", "02n": "🌤",
+    "03d": "☁️", "03n": "☁️",
+    "04d": "⛅️", "04n": "⛅️",
+    "09d": "🌧", "09n": "🌧",
+    "10d": "🌦", "10n": "🌦",
+    "11d": "⛈", "11n": "⛈",
+    "13d": "❄️", "13n": "❄️",
+    "50d": "🌫", "50n": "🌫"
 }
 
 async def get_weather_today():
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,apparent_temperature,weather_code&timezone=Europe%2FChisinau"
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status != 200: return "❌ Не удалось получить данные о погоде."
+            if response.status != 200: 
+                return "❌ Не удалось получить данные о погоде."
             data = await response.json()
-            temp, feels_like = round(data["current"]["temperature_2m"]), round(data["current"]["apparent_temperature"])
-            desc = WEATHER_CODES.get(data["current"]["weather_code"], "Неизвестно ❓")
-            return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n☁️ На улице: {desc}"
+            
+            temp = round(data["main"]["temp"])
+            feels_like = round(data["main"]["feels_like"])
+            desc = data["weather"][0]["description"].capitalize()
+            icon = data["weather"][0]["icon"]
+            emoji = OW_EMOJIS.get(icon, "❓")
+            
+            return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n{emoji} На улице: {desc}"
 
 async def get_weather_week():
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FChisinau"
+    # Стандартный бесплатный API дает прогноз на 5 дней (каждые 3 часа)
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status != 200: return "❌ Не удалось получить прогноз."
+            if response.status != 200: 
+                return "❌ Не удалось получить прогноз."
             data = await response.json()
-            forecast_text = "📅 Прогноз в Кишиневе на 7 дней:\n\n"
-            for i in range(7):
-                formatted_date = datetime.datetime.strptime(data["daily"]["time"][i], "%Y-%m-%d").strftime("%d.%m")
-                min_temp, max_temp = round(data["daily"]["temperature_2m_min"][i]), round(data["daily"]["temperature_2m_max"][i])
-                desc = WEATHER_CODES.get(data["daily"]["weather_code"][i], "Неизвестно")
-                forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {desc}\n"
+            
+            daily_data = {}
+            # Группируем 3-часовые прогнозы по дням
+            for item in data["list"]:
+                date_str = item["dt_txt"].split(" ")[0]
+                temp = item["main"]["temp"]
+                
+                if date_str not in daily_data:
+                    daily_data[date_str] = {
+                        "min_temp": temp,
+                        "max_temp": temp,
+                        "desc": item["weather"][0]["description"].capitalize(),
+                        "icon": item["weather"][0]["icon"]
+                    }
+                else:
+                    daily_data[date_str]["min_temp"] = min(daily_data[date_str]["min_temp"], temp)
+                    daily_data[date_str]["max_temp"] = max(daily_data[date_str]["max_temp"], temp)
+                    # Выбираем описание примерно на середину дня (около 12:00 - 15:00)
+                    if "12:00:00" in item["dt_txt"] or "15:00:00" in item["dt_txt"]:
+                        daily_data[date_str]["desc"] = item["weather"][0]["description"].capitalize()
+                        daily_data[date_str]["icon"] = item["weather"][0]["icon"]
+
+            forecast_text = "📅 Прогноз в Кишиневе на 5 дней:\n\n"
+            # OpenWeather выдает максимум 5 дней в бесплатном тарифе
+            for date_str, info in list(daily_data.items())[:5]:
+                formatted_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m")
+                min_temp, max_temp = round(info["min_temp"]), round(info["max_temp"])
+                emoji = OW_EMOJIS.get(info["icon"], "")
+                forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {emoji} {info['desc']}\n"
+            
             return forecast_text
 
+# ================= ЛОГИКА ЭЛЕКТРОННОГО ЖУРНАЛА =================
 async def fetch_journal_absences(idnp: str) -> str:
     url = "https://studentcrd.usm.md/"
     
@@ -271,12 +309,12 @@ async def fetch_journal_absences(idnp: str) -> str:
                         
                     elif len(tds) == 3:
                         raw_date = tds[1].text.strip()
-                        mark = tds[2].text.strip().lower() # Здесь либо пустота, либо "a", либо оценка
+                        mark = tds[2].text.strip().lower() 
                         
                         date_parts = raw_date.split(' ')[0].split('.')
                         short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                         
-                        key = f"📖 {current_subject}\n👨‍‍🏫 {current_teacher}"
+                        key = f"📖 **{current_subject}**\n👨‍‍🏫 *{current_teacher}*"
                         if key not in attendance_dict:
                             attendance_dict[key] = []
                             
@@ -286,13 +324,12 @@ async def fetch_journal_absences(idnp: str) -> str:
                         elif mark == '':
                             attendance_dict[key].append(f"✅ {short_date}")
                         else:
-                            # Если там не "a" и не пусто — значит стоит оценка
                             attendance_dict[key].append(f"💭 Оценка: {mark}, {short_date}")
                 
                 if not attendance_dict:
                     return "Данные о посещаемости и оценках отсутствуют."
                 
-                final_text = "📊 Ваши оценки и посещаемость:\n\n"
+                final_text = "📊 **Ваши оценки и посещаемость:**\n\n"
                 for subj_header, logs in attendance_dict.items():
                     final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
                     
@@ -321,7 +358,6 @@ def format_day_schedule(group_id, subgroup_id, day):
     text = f"🎓 Группа {group_id} | 👥 Подгруппа {subgroup_id} | 📅 {day}\n🗓 Неделя: {week_label}\n\n"
     active_lessons = {}
     
-    # Берем расписание строго по номеру подгруппы
     for pair_num, variations in SCHEDULE[str(subgroup_id)].get(day, {}).items():
         if "all" in variations: active_lessons[pair_num] = variations["all"]
         elif week_type in variations: active_lessons[pair_num] = variations[week_type]
