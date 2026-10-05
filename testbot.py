@@ -314,7 +314,7 @@ async def fetch_journal_absences(idnp: str) -> str:
                         date_parts = raw_date.split(' ')[0].split('.')
                         short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                         
-                        key = f"📖 **{current_subject}**\n👨‍‍🏫 *{current_teacher}*"
+                        key = f"📖 {current_subject}\n👨‍‍🏫 {current_teacher}"
                         if key not in attendance_dict:
                             attendance_dict[key] = []
                             
@@ -329,7 +329,7 @@ async def fetch_journal_absences(idnp: str) -> str:
                 if not attendance_dict:
                     return "Данные о посещаемости и оценках отсутствуют."
                 
-                final_text = "📊 **Ваши оценки и посещаемость:**\n\n"
+                final_text = "📊 Ваши оценки и посещаемость:\n\n"
                 for subj_header, logs in attendance_dict.items():
                     final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
                     
@@ -413,7 +413,7 @@ async def cmd_start(message: Message, state: FSMContext):
 async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     await state.set_state(JournalState.waiting_for_idnp)
     await callback.message.edit_text(
-        text="Введите ваш IDNP (Задняя часть паспорта).",
+        text="Введите ваш IDNP (Задняя часть паспорта):",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Отмена", callback_data="back_main")]])
     )
     await callback.answer()
