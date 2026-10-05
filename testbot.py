@@ -207,7 +207,6 @@ async def get_weather_week():
                 forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {desc}\n"
             return forecast_text
 
-# ================= ЛОГИКА ЭЛЕКТРОННОГО ЖУРНАЛА =================
 async def fetch_journal_absences(idnp: str) -> str:
     url = "https://studentcrd.usm.md/"
     
@@ -277,7 +276,7 @@ async def fetch_journal_absences(idnp: str) -> str:
                         date_parts = raw_date.split(' ')[0].split('.')
                         short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                         
-                        key = f"📖 **{current_subject}**\n👨‍‍🏫 *{current_teacher}*"
+                        key = f"📖 {current_subject}\n👨‍‍🏫 {current_teacher}"
                         if key not in attendance_dict:
                             attendance_dict[key] = []
                             
@@ -293,7 +292,7 @@ async def fetch_journal_absences(idnp: str) -> str:
                 if not attendance_dict:
                     return "Данные о посещаемости и оценках отсутствуют."
                 
-                final_text = "📊 **Ваши оценки и посещаемость:**\n\n"
+                final_text = "📊 Ваши оценки и посещаемость:\n\n"
                 for subj_header, logs in attendance_dict.items():
                     final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
                     
