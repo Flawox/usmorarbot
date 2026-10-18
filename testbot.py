@@ -206,67 +206,78 @@ async def sync_user_to_db(user_id: int):
     except Exception as e:
         print(f"❌ Ошибка сохранения юзера: {e}")
 
-# ================= ЛОГИКА ПОГОДЫ =================
+# ================= ЛОГИКА ПОГОДЫ (OpenWeather) =================
+OW_API_KEY = "10ee9c368fc7dc64b18dae5c7a963d28"
 LAT, LON = 47.0105, 28.8638
-WEATHER_CODES = {
-    0: "Ясно ☀️", 1: "Преимущественно ясно 🌤", 2: "Переменная облачность ⛅️", 3: "Пасмурно ☁️",
-    45: "Туман 🌫", 48: "Иней 🌫",
-    51: "Легкая морось 🌧", 53: "Умеренная морось 🌧", 55: "Густая морось 🌧",
-    61: "Слабый дождь 🌧", 63: "Умеренный дождь 🌧", 65: "Сильный дождь 🌧",
-    71: "Слабый снег ❄️", 73: "Умеренный снег ❄️", 75: "Сильный снег ❄️",
-    80: "Слабый ливень 🌦", 81: "Умеренный ливень 🌧", 82: "Сильный ливень ⛈",
-    95: "Гроза ⛈", 96: "Гроза с градом ⛈", 99: "Сильная гроза ⛈"
-}
 
-# Маскируемся под обычный браузер
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Accept": "application/json"
+# Эмодзи по кодам иконок OpenWeather (день/ночь)
+OW_EMOJIS = {
+    "01d": "☀️", "01n": "🌙",
+    "02d": "🌤", "02n": "🌤",
+    "03d": "☁️", "03n": "☁️",
+    "04d": "⛅️", "04n": "⛅️",
+    "09d": "🌧", "09n": "🌧",
+    "10d": "🌦", "10n": "🌦",
+    "11d": "⛈", "11n": "⛈",
+    "13d": "❄️", "13n": "❄️",
+    "50d": "🌫", "50n": "🌫"
 }
 
 async def get_weather_today():
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,apparent_temperature,weather_code&timezone=Europe%2FChisinau"
-    try:
-        connector = aiohttp.TCPConnector(ssl=False)
-        async with aiohttp.ClientSession(connector=connector, headers=HEADERS) as session:
-            async with session.get(url, timeout=10) as response:
-                if response.status != 200: 
-                    # Теперь, если будет ошибка, бот напишет её номер
-                    return f"❌ Сервер погоды отклонил запрос (Код: {response.status})."
-                
-                data = await response.json()
-                temp = round(data["current"]["temperature_2m"])
-                feels_like = round(data["current"]["apparent_temperature"])
-                desc = WEATHER_CODES.get(data["current"]["weather_code"], "Неизвестно ❓")
-                
-                now_time = datetime.datetime.now().strftime("%H:%M:%S")
-                return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n☁️ На улице: {desc}\n\n🔄 Обновлено: {now_time}"
-    except Exception as e:
-        return f"❌ Ошибка соединения с сервером погоды: {e}"
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200: 
+                return "❌ Не удалось получить данные о погоде."
+            data = await response.json()
+            
+            temp = round(data["main"]["temp"])
+            feels_like = round(data["main"]["feels_like"])
+            desc = data["weather"][0]["description"].capitalize()
+            icon = data["weather"][0]["icon"]
+            emoji = OW_EMOJIS.get(icon, "❓")
+            
+            return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n{emoji} На улице: {desc}"
 
 async def get_weather_week():
-    url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FChisinau"
-    try:
-        connector = aiohttp.TCPConnector(ssl=False)
-        async with aiohttp.ClientSession(connector=connector, headers=HEADERS) as session:
-            async with session.get(url, timeout=10) as response:
-                if response.status != 200: 
-                    return f"❌ Сервер погоды отклонил запрос (Код: {response.status})."
+    # Стандартный бесплатный API дает прогноз на 5 дней (каждые 3 часа)
+    url = f"https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status != 200: 
+                return "❌ Не удалось получить прогноз."
+            data = await response.json()
+            
+            daily_data = {}
+            # Группируем 3-часовые прогнозы по дням
+            for item in data["list"]:
+                date_str = item["dt_txt"].split(" ")[0]
+                temp = item["main"]["temp"]
                 
-                data = await response.json()
-                forecast_text = "📅 Прогноз в Кишиневе на 7 дней:\n\n"
-                for i in range(7):
-                    formatted_date = datetime.datetime.strptime(data["daily"]["time"][i], "%Y-%m-%d").strftime("%d.%m")
-                    min_temp = round(data["daily"]["temperature_2m_min"][i])
-                    max_temp = round(data["daily"]["temperature_2m_max"][i])
-                    desc = WEATHER_CODES.get(data["daily"]["weather_code"][i], "Неизвестно")
-                    forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {desc}\n"
-                
-                now_time = datetime.datetime.now().strftime("%H:%M:%S")
-                return forecast_text + f"\n🔄 Обновлено: {now_time}"
-    except Exception as e:
-        return f"❌ Ошибка соединения с сервером погоды: {e}"
+                if date_str not in daily_data:
+                    daily_data[date_str] = {
+                        "min_temp": temp,
+                        "max_temp": temp,
+                        "desc": item["weather"][0]["description"].capitalize(),
+                        "icon": item["weather"][0]["icon"]
+                    }
+                else:
+                    daily_data[date_str]["min_temp"] = min(daily_data[date_str]["min_temp"], temp)
+                    daily_data[date_str]["max_temp"] = max(daily_data[date_str]["max_temp"], temp)
+                    # Выбираем описание примерно на середину дня (около 12:00 - 15:00)
+                    if "12:00:00" in item["dt_txt"] or "15:00:00" in item["dt_txt"]:
+                        daily_data[date_str]["desc"] = item["weather"][0]["description"].capitalize()
+                        daily_data[date_str]["icon"] = item["weather"][0]["icon"]
 
+            forecast_text = "📅 Прогноз в Кишиневе на 5 дней:\n\n"
+            # OpenWeather выдает максимум 5 дней в бесплатном тарифе
+            for date_str, info in list(daily_data.items())[:5]:
+                formatted_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m")
+                min_temp, max_temp = round(info["min_temp"]), round(info["max_temp"])
+                emoji = OW_EMOJIS.get(info["icon"], "")
+                forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {emoji} {info['desc']}\n"
+            
+            return forecast_text
 # ================= АВТОРИЗАЦИЯ НА САЙТЕ USM =================
 async def login_to_usm(session, idnp: str):
     url = "https://studentcrd.usm.md/"
