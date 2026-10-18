@@ -336,7 +336,7 @@ async def fetch_journal_absences(idnp: str) -> str:
             
         return final_text[:4000] + ("\n..." if len(final_text) > 4000 else "")
 
-# ================= ЛОГИКА ОЦЕНОК ЗА ТЕСТЫ (EVALUARE) =================
+# ================= ЛОГИКА ОЦЕНОК ЗА ТЕСТЫ =================
 async def fetch_journal_evaluare(idnp: str) -> str:
     connector = aiohttp.TCPConnector(ssl=False)
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -348,7 +348,7 @@ async def fetch_journal_evaluare(idnp: str) -> str:
             return "❌ Не удалось найти раздел с оценками."
         
         table = eval_div.find('table')
-        eval_text = "📝 <b>Ваши оценки за тесты (Evaluare):</b>\n\n"
+        eval_text = "📝 <b>Ваши оценки за тесты:</b>\n\n"
         current_subject = ""
         current_teacher = ""
         
@@ -363,9 +363,9 @@ async def fetch_journal_evaluare(idnp: str) -> str:
                 test_name = tds[0].text.strip()
                 grade = tds[1].text.strip()
                 if test_name and grade:
-                    eval_text += f"📖 <b>{current_subject}</b>\n👨‍🏫 <i>{current_teacher}</i>\n📌 {test_name}: <b>{grade}</b>\n\n"
+                    eval_text += f"📖 <b>{current_subject}</b>\n👨‍🏫 <i>{current_teacher}</i>\n📌 Тест: {test_name}\n💭 Оценка: <b>{grade}</b>\n\n"
                     
-        if eval_text == "📝 <b>Ваши оценки за тесты (Evaluare):</b>\n\n":
+        if eval_text == "📝 <b>Ваши оценки за тесты:</b>\n\n":
             return "Данные об оценках отсутствуют."
             
         return eval_text[:4000]
@@ -408,8 +408,8 @@ def get_main_kb():
          InlineKeyboardButton(text="🎓 Группа 3", callback_data="group_3")],
         [InlineKeyboardButton(text="🌤 Погода", callback_data="weather_today"), 
          InlineKeyboardButton(text="📅 Прогноз", callback_data="weather_week")],
-        [InlineKeyboardButton(text="📖 Журнал: Посещаемость", callback_data="open_journal_freq")],
-        [InlineKeyboardButton(text="📝 Журнал: Оценки (Evaluare)", callback_data="open_journal_eval")]
+        [InlineKeyboardButton(text="📖 Журнал (Оценки и Пропуски)", callback_data="open_journal_freq")],
+        [InlineKeyboardButton(text="📝 Журнал: Оценки за Тесты", callback_data="open_journal_eval")]
     ])
 
 def get_subgroups_kb(group_id):
@@ -501,7 +501,7 @@ async def process_idnp_eval(message: Message, state: FSMContext):
     if not idnp.isdigit() or len(idnp) != 13:
         await message.answer("⚠️ Неверный формат. IDNP должен состоять ровно из 13 цифр.")
         return
-    wait_msg = await message.answer("⏳ Загружаю оценки за тесты (Evaluare)...")
+    wait_msg = await message.answer("⏳ Загружаю оценки за тесты...")
     result = await fetch_journal_evaluare(idnp)
     await state.clear()
     await wait_msg.edit_text(result, reply_markup=get_main_kb(), parse_mode="HTML")
