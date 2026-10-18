@@ -218,29 +218,54 @@ WEATHER_CODES = {
     95: "Гроза ⛈", 96: "Гроза с градом ⛈", 99: "Сильная гроза ⛈"
 }
 
+# Маскируемся под обычный браузер
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept": "application/json"
+}
+
 async def get_weather_today():
     url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&current=temperature_2m,apparent_temperature,weather_code&timezone=Europe%2FChisinau"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status != 200: return "❌ Не удалось получить данные о погоде."
-            data = await response.json()
-            temp, feels_like = round(data["current"]["temperature_2m"]), round(data["current"]["apparent_temperature"])
-            desc = WEATHER_CODES.get(data["current"]["weather_code"], "Неизвестно ❓")
-            return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n☁️ На улице: {desc}"
+    try:
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(connector=connector, headers=HEADERS) as session:
+            async with session.get(url, timeout=10) as response:
+                if response.status != 200: 
+                    # Теперь, если будет ошибка, бот напишет её номер
+                    return f"❌ Сервер погоды отклонил запрос (Код: {response.status})."
+                
+                data = await response.json()
+                temp = round(data["current"]["temperature_2m"])
+                feels_like = round(data["current"]["apparent_temperature"])
+                desc = WEATHER_CODES.get(data["current"]["weather_code"], "Неизвестно ❓")
+                
+                now_time = datetime.datetime.now().strftime("%H:%M:%S")
+                return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n☁️ На улице: {desc}\n\n🔄 Обновлено: {now_time}"
+    except Exception as e:
+        return f"❌ Ошибка соединения с сервером погоды: {e}"
 
 async def get_weather_week():
     url = f"https://api.open-meteo.com/v1/forecast?latitude={LAT}&longitude={LON}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Europe%2FChisinau"
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            if response.status != 200: return "❌ Не удалось получить прогноз."
-            data = await response.json()
-            forecast_text = "📅 Прогноз в Кишиневе на 7 дней:\n\n"
-            for i in range(7):
-                formatted_date = datetime.datetime.strptime(data["daily"]["time"][i], "%Y-%m-%d").strftime("%d.%m")
-                min_temp, max_temp = round(data["daily"]["temperature_2m_min"][i]), round(data["daily"]["temperature_2m_max"][i])
-                desc = WEATHER_CODES.get(data["daily"]["weather_code"][i], "Неизвестно")
-                forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {desc}\n"
-            return forecast_text
+    try:
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(connector=connector, headers=HEADERS) as session:
+            async with session.get(url, timeout=10) as response:
+                if response.status != 200: 
+                    return f"❌ Сервер погоды отклонил запрос (Код: {response.status})."
+                
+                data = await response.json()
+                forecast_text = "📅 Прогноз в Кишиневе на 7 дней:\n\n"
+                for i in range(7):
+                    formatted_date = datetime.datetime.strptime(data["daily"]["time"][i], "%Y-%m-%d").strftime("%d.%m")
+                    min_temp = round(data["daily"]["temperature_2m_min"][i])
+                    max_temp = round(data["daily"]["temperature_2m_max"][i])
+                    desc = WEATHER_CODES.get(data["daily"]["weather_code"][i], "Неизвестно")
+                    forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {desc}\n"
+                
+                now_time = datetime.datetime.now().strftime("%H:%M:%S")
+                return forecast_text + f"\n🔄 Обновлено: {now_time}"
+    except Exception as e:
+        return f"❌ Ошибка соединения с сервером погоды: {e}"
 
 # ================= АВТОРИЗАЦИЯ НА САЙТЕ USM =================
 async def login_to_usm(session, idnp: str):
