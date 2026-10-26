@@ -17,13 +17,12 @@ load_dotenv()
 
 # ================= НАСТРОЙКИ =================
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = 7195495745  # Твой Telegram ID для рассылок
-DB_CHANNEL_ID = os.getenv("DB_CHANNEL_ID") # Подтянется из Render после настройки
+ADMIN_ID = 7195495745  # Твой Telegram ID
+DB_CHANNEL_ID = os.getenv("DB_CHANNEL_ID")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Хранилище пользователей в оперативной памяти (для быстрой работы)
 known_users = set()
 
 class JournalState(StatesGroup):
@@ -264,6 +263,32 @@ SCHEDULE = {
     }
 }
 
+# ================= КОЛИЧЕСТВО ПАР (СТАТИКА ДЛЯ ЖУРНАЛА USM) =================
+def get_subject_total(journal_subject):
+    js = journal_subject.lower()
+    
+    # --- 30 ПАР ---
+    if "истор" in js or "istor" in js: return 30
+    if "географ" in js or "geograf" in js: return 30
+    if "математ" in js or "matemat" in js: return 30
+    if "английск" in js or "englez" in js or "străin" in js or "strain" in js: return 30
+    
+    # --- 16 ПАР ---
+    if "физик" in js or "fizic" in js: return 16
+    
+    # --- 15 ПАР ---
+    if "биолог" in js or "biolog" in js: return 15
+    if "информат" in js or "informat" in js or "tic" in js: return 15
+    
+    # --- 14 ПАР ---
+    if "хими" in js or "chimi" in js: return 14
+    
+    # --- 45 ПАР ---
+    if "румын" in js or "român" in js or "roman" in js or "alolingv" in js: return 45
+    if "русск" in js or "rus" in js: return 45
+    
+    return None
+
 # ================= ЛОГИКА БАЗЫ ДАННЫХ TELEGRAM =================
 async def load_db_from_channel():
     if not DB_CHANNEL_ID: return
@@ -290,70 +315,55 @@ async def sync_user_to_db(user_id: int):
         if pinned and "USERS_DB" in pinned.text:
             if str(user_id) not in pinned.text:
                 new_text = pinned.text + f"\n{user_id}"
-                if len(new_text) < 4000: # Защита от лимитов Telegram
+                if len(new_text) < 4000:
                     await bot.edit_message_text(chat_id=DB_CHANNEL_ID, message_id=pinned.message_id, text=new_text)
     except Exception as e:
         print(f"❌ Ошибка сохранения юзера: {e}")
 
-# ================= ЛОГИКА ПОГОДЫ (OpenWeather) =================
+# ================= ЛОГИКА ПОГОДЫ =================
 OW_API_KEY = "10ee9c368fc7dc64b18dae5c7a963d28"
 LAT, LON = 47.0105, 28.8638
 
-# Эмодзи по кодам иконок OpenWeather (день/ночь)
 OW_EMOJIS = {
-    "01d": "☀️", "01n": "🌙",
-    "02d": "🌤", "02n": "🌤",
-    "03d": "☁️", "03n": "☁️",
-    "04d": "⛅️", "04n": "⛅️",
-    "09d": "🌧", "09n": "🌧",
-    "10d": "🌦", "10n": "🌦",
-    "11d": "⛈", "11n": "⛈",
-    "13d": "❄️", "13n": "❄️",
-    "50d": "🌫", "50n": "🌫"
+    "01d": "☀️", "01n": "🌙", "02d": "🌤", "02n": "🌤", "03d": "☁️", "03n": "☁️",
+    "04d": "⛅️", "04n": "⛅️", "09d": "🌧", "09n": "🌧", "10d": "🌦", "10n": "🌦",
+    "11d": "⛈", "11n": "⛈", "13d": "❄️", "13n": "❄️", "50d": "🌫", "50n": "🌫"
 }
 
 async def get_weather_today():
     url = f"https://api.openweathermap.org/data/2.5/weather?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status != 200: 
-                return "❌ Не удалось получить данные о погоде."
+            if response.status != 200: return "❌ Не удалось получить данные о погоде."
             data = await response.json()
-            
             temp = round(data["main"]["temp"])
             feels_like = round(data["main"]["feels_like"])
             desc = data["weather"][0]["description"].capitalize()
             icon = data["weather"][0]["icon"]
             emoji = OW_EMOJIS.get(icon, "❓")
-            
             return f"🌤 Погода в Кишиневе сейчас:\n\n🌡 Температура: {temp}°C (ощущается как {feels_like}°C)\n{emoji} На улице: {desc}"
 
 async def get_weather_week():
-    # Стандартный бесплатный API дает прогноз на 5 дней (каждые 3 часа)
     url = f"https://api.openweathermap.org/data/2.5/forecast?lat={LAT}&lon={LON}&appid={OW_API_KEY}&units=metric&lang=ru"
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
-            if response.status != 200: 
-                return "❌ Не удалось получить прогноз."
+            if response.status != 200: return "❌ Не удалось получить прогноз."
             data = await response.json()
             
             daily_data = {}
-            # Группируем 3-часовые прогнозы по дням
             for item in data["list"]:
                 date_str = item["dt_txt"].split(" ")[0]
                 temp = item["main"]["temp"]
                 
                 if date_str not in daily_data:
                     daily_data[date_str] = {
-                        "min_temp": temp,
-                        "max_temp": temp,
+                        "min_temp": temp, "max_temp": temp,
                         "desc": item["weather"][0]["description"].capitalize(),
                         "icon": item["weather"][0]["icon"]
                     }
                 else:
                     daily_data[date_str]["min_temp"] = min(daily_data[date_str]["min_temp"], temp)
                     daily_data[date_str]["max_temp"] = max(daily_data[date_str]["max_temp"], temp)
-                    # Выбираем описание примерно на середину дня (около 12:00 - 15:00)
                     if "12:00:00" in item["dt_txt"] or "15:00:00" in item["dt_txt"]:
                         daily_data[date_str]["desc"] = item["weather"][0]["description"].capitalize()
                         daily_data[date_str]["icon"] = item["weather"][0]["icon"]
@@ -364,7 +374,6 @@ async def get_weather_week():
                 min_temp, max_temp = round(info["min_temp"]), round(info["max_temp"])
                 emoji = OW_EMOJIS.get(info["icon"], "")
                 forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {emoji} {info['desc']}\n"
-            
             return forecast_text
 
 # ================= АВТОРИЗАЦИЯ НА САЙТЕ USM =================
@@ -372,8 +381,7 @@ async def login_to_usm(session, idnp: str):
     url = "https://studentcrd.usm.md/"
     try:
         async with session.get(url, timeout=10) as get_response:
-            if get_response.status != 200:
-                return None, "❌ Ошибка подключения к сайту USM."
+            if get_response.status != 200: return None, "❌ Ошибка подключения к сайту USM."
             
             soup = BeautifulSoup(await get_response.text(), 'html.parser')
             viewstate = soup.find('input', {'name': '__VIEWSTATE'})
@@ -387,24 +395,21 @@ async def login_to_usm(session, idnp: str):
                 '__VIEWSTATE': viewstate.get('value', ''),
                 '__VIEWSTATEGENERATOR': viewstategenerator.get('value', '') if viewstategenerator else '',
                 '__EVENTVALIDATION': eventvalidation.get('value', ''),
-                'txtCodperson': idnp,
-                'btLogin': 'Login'
+                'txtCodperson': idnp, 'btLogin': 'Login'
             }
             
         async with session.post(url, data=payload, timeout=10) as post_response:
-            if post_response.status != 200:
-                return None, "❌ Ошибка при отправке данных авторизации."
+            if post_response.status != 200: return None, "❌ Ошибка при отправке данных авторизации."
             
             result_soup = BeautifulSoup(await post_response.text(), 'html.parser')
             error_span = result_soup.find('span', {'id': 'lbErr'})
             if error_span and error_span.text.strip():
                 return None, f"❌ Ошибка входа: {error_span.text.strip()}"
-            
             return result_soup, None
     except Exception as e:
         return None, f"❌ Ошибка обработки данных: {e}"
 
-# ================= ЛОГИКА ЭЛЕКТРОННОГО ЖУРНАЛА (ПОСЕЩАЕМОСТЬ) =================
+# ================= ЖУРНАЛ (ОЦЕНКИ, ПРОПУСКИ И ПРОЦЕНТ) =================
 async def fetch_journal_absences(idnp: str) -> str:
     connector = aiohttp.TCPConnector(ssl=False)
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -417,6 +422,7 @@ async def fetch_journal_absences(idnp: str) -> str:
         
         table = freq_div.find('table')
         attendance_dict = {}
+        absences_count = {}
         current_subject = "Неизвестный предмет"
         current_teacher = "Неизвестный преподаватель"
         
@@ -443,11 +449,14 @@ async def fetch_journal_absences(idnp: str) -> str:
                 date_parts = raw_date.split(' ')[0].split('.')
                 short_date = f"{date_parts[0]}.{date_parts[1]}" if len(date_parts) >= 2 else raw_date
                 
-                key = f"📖 <b>{current_subject}</b>\n👨‍🏫 <i>{current_teacher}</i>"
-                if key not in attendance_dict: attendance_dict[key] = []
+                key = (current_subject, current_teacher)
+                if key not in attendance_dict: 
+                    attendance_dict[key] = []
+                    absences_count[key] = 0
                     
                 if mark == 'a':
                     attendance_dict[key].append(f"❌ {short_date}")
+                    absences_count[key] += 1
                 elif mark == '':
                     attendance_dict[key].append(f"✅ {short_date}")
                 else:
@@ -455,9 +464,21 @@ async def fetch_journal_absences(idnp: str) -> str:
         
         if not attendance_dict: return "Данные о посещаемости отсутствуют."
         
-        final_text = "📊 <b>Посещаемость и баллы:</b>\n\n"
-        for subj_header, logs in attendance_dict.items():
-            final_text += f"{subj_header}\n" + " | ".join(logs) + "\n\n"
+        final_text = f"📊 <b>Посещаемость и баллы (лимит пропусков 33.3%):</b>\n\n"
+        
+        for (subj, teacher), logs in attendance_dict.items():
+            header = f"📖 <b>{subj}</b>\n👨‍🏫 <i>{teacher}</i>"
+            total_pairs = get_subject_total(subj)
+            absences = absences_count.get((subj, teacher), 0)
+            
+            # Подсчет процента пропусков
+            if total_pairs:
+                absence_percent = round((absences / total_pairs) * 100, 1)
+                stats = f"⚠️ <b>Пропуски:</b> {absences}/{total_pairs} | 📉 <b>Процент пропусков:</b> {absence_percent}%"
+            else:
+                stats = f"⚠️ <b>Пропуски:</b> {absences} (неизвестно всего пар)"
+                
+            final_text += f"{header}\n{stats}\n" + " | ".join(logs) + "\n\n"
             
         return final_text[:4000] + ("\n..." if len(final_text) > 4000 else "")
 
@@ -469,13 +490,11 @@ async def fetch_journal_evaluare(idnp: str) -> str:
         if error: return error
         
         eval_div = result_soup.find('div', id='divEvaluareCur')
-        if not eval_div or not eval_div.find('table'):
-            return "❌ Не удалось найти раздел с оценками."
+        if not eval_div or not eval_div.find('table'): return "❌ Не удалось найти раздел с оценками."
         
         table = eval_div.find('table')
         eval_text = "📝 <b>Ваши оценки за тесты:</b>\n\n"
-        current_subject = ""
-        current_teacher = ""
+        current_subject, current_teacher = "", ""
         
         for row in table.find_all('tr'):
             tds = row.find_all('td')
@@ -485,15 +504,11 @@ async def fetch_journal_evaluare(idnp: str) -> str:
                 current_subject = tds[0].text.strip()
                 current_teacher = tds[1].text.strip()
             else:
-                test_name = tds[0].text.strip()
-                grade = tds[1].text.strip()
+                test_name, grade = tds[0].text.strip(), tds[1].text.strip()
                 if test_name and grade:
                     eval_text += f"📖 <b>{current_subject}</b>\n👨‍🏫 <i>{current_teacher}</i>\n📌 Тест: {test_name}\n💭 Оценка: <b>{grade}</b>\n\n"
                     
-        if eval_text == "📝 <b>Ваши оценки за тесты:</b>\n\n":
-            return "Данные об оценках отсутствуют."
-            
-        return eval_text[:4000]
+        return "Данные об оценках отсутствуют." if eval_text == "📝 <b>Ваши оценки за тесты:</b>\n\n" else eval_text[:4000]
 
 # ================= ЛОГИКА РАСПИСАНИЯ =================
 def get_current_week_info():
@@ -510,10 +525,8 @@ def format_day_schedule(group_id, subgroup_id, day):
     text = f"🎓 Группа {group_id} | 👥 Подгруппа {subgroup_id} | 📅 {day}\n🗓 Неделя: {week_label}\n\n"
     active_lessons = {}
     
-    try:
-        day_schedule = SCHEDULE[str(group_id)][str(subgroup_id)].get(day, {})
-    except KeyError:
-        day_schedule = {}
+    try: day_schedule = SCHEDULE[str(group_id)][str(subgroup_id)].get(day, {})
+    except KeyError: day_schedule = {}
     
     for pair_num, variations in day_schedule.items():
         if "all" in variations: active_lessons[pair_num] = variations["all"]
@@ -521,7 +534,6 @@ def format_day_schedule(group_id, subgroup_id, day):
             
     if not active_lessons: return text + "В этот день пар нет! 🎉 Выходной."
         
-    # ИЗМЕНЕНИЕ ЗДЕСЬ: Цикл теперь всегда начинается с 1-й пары, чтобы выводить "Окно", если день начинается не с первой
     for pair_num in range(1, max(active_lessons.keys()) + 1):
         time_str = TIMES.get(pair_num, "")
         if pair_num in active_lessons:
@@ -529,7 +541,6 @@ def format_day_schedule(group_id, subgroup_id, day):
             text += f"{pair_num}. 🕒 {time_str}\n📚 {l['subject']} ({l['type']})\n👨‍🏫 {l['teacher']}\n🚪 Аудитория: {l['room']}\n\n"
         else:
             text += f"{pair_num}. 🕒 {time_str}\n🪟 Окно (свободная пара)\n\n"
-            
     return text.strip()
 
 # ================= КЛАВИАТУРЫ =================
@@ -573,12 +584,7 @@ async def init_db_in_channel(message: Message):
     channel_id = message.chat.id
     msg = await message.answer(f"USERS_DB:\n{ADMIN_ID}")
     await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) 
-    await message.answer(
-        f"✅ База данных успешно создана и закреплена!\n\n"
-        f"Зайди на Render.com, открой настройки проекта (Environment) и добавь новую переменную:\n"
-        f"Ключ: `DB_CHANNEL_ID`\n"
-        f"Значение: `{channel_id}`", parse_mode="Markdown"
-    )
+    await message.answer(f"✅ База данных успешно создана и закреплена!\nЗапиши этот ID в переменные окружения Render как `DB_CHANNEL_ID`.", parse_mode="Markdown")
 
 @dp.message(F.text.startswith("/broadcast"))
 async def cmd_broadcast(message: Message):
@@ -586,7 +592,7 @@ async def cmd_broadcast(message: Message):
     
     text_to_send = message.text.replace("/broadcast", "").strip()
     if not text_to_send:
-        await message.answer("⚠️ Введите текст для рассылки.\nПример: `/broadcast Всем привет!`", parse_mode="Markdown")
+        await message.answer("⚠️ Введите текст. Пример: `/broadcast Всем привет!`", parse_mode="Markdown")
         return
         
     count = 0
@@ -604,7 +610,7 @@ async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     else: await state.set_state(JournalState.waiting_for_idnp_eval)
         
     await callback.message.edit_text(
-        text="Введите ваш IDNP (Задняя часть паспорта).",
+        text="Введите ваш IDNP (Задняя часть паспорта):",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Отмена", callback_data="back_main")]])
     )
     await callback.answer()
@@ -678,7 +684,8 @@ async def back_to_main(callback: CallbackQuery, state: FSMContext):
 app = Flask(__name__)
 
 @app.route('/')
-def home(): return "USM Bot is running!"
+def home(): 
+    return "USM Bot is running on Render!"
 
 def run_web():
     port = int(os.environ.get("PORT", 10000))
@@ -694,6 +701,7 @@ def start_web_server():
 # ================= ЗАПУСК =================
 async def main():
     await load_db_from_channel() 
+    print("Бот запущен")
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
