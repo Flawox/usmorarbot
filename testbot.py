@@ -35,142 +35,231 @@ TIMES = {1: "08:00-09:30", 2: "09:45-11:15", 3: "11:30-13:00", 4: "13:15-14:45",
 
 SCHEDULE = {
     "1": {
-        "Понедельник": {
-            1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
-            4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}},
-            5: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
-        },
-        "Вторник": {
-            1: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Наталья Карчева", "room": "229/3"}},
-            3: {
-                "odd": {"subject": "Физика", "type": "Семинар", "teacher": "Виорел Дущак", "room": "427/BC"},
-                "even": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"}
+        "1": {
+            "Понедельник": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}},
+                5: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
+            },
+            "Вторник": {
+                1: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "229/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"},
+                    "even": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "427/блок ВС"}
+                }
+            },
+            "Среда": {
+                1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
+            },
+            "Четверг": {
+                1: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "221/3"}},
+                2: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "О. Топалэ", "room": "528/3"}},
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "221/3"}}
+            },
+            "Пятница": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "433/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}}
             }
         },
-        "Среда": {
-            1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            3: {
-                "odd": {"subject": "Физика", "type": "Лекция", "teacher": "Виорел Дущак", "room": "425/4"},
-                "even": {"subject": "Биология", "type": "Лекция", "teacher": "Вадим Русу", "room": "425/4"}
+        "2": {
+            "Понедельник": {
+                1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}},
+                5: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
             },
-            4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Лиля Соловей", "room": "127"}},
-            5: {"all": {"subject": "География", "type": "Лекция", "teacher": "Марчел Ревенко", "room": "401/3"}}
-        },
-        "Четверг": {
-            1: {"all": {"subject": "География", "type": "Семинар", "teacher": "Марчел Ревенко", "room": "221/3"}},
-            2: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Олег Топалэ", "room": "528/3"}},
-            3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "Ольга Вулпе", "room": "127/3"}},
-            4: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "221/3"}}
-        },
-        "Пятница": {
-            1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            3: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "433/3"}},
-            4: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "433/3"}}
+            "Вторник": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"},
+                    "even": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "427/блок ВС"}
+                }
+            },
+            "Среда": {
+                2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "229/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
+            },
+            "Четверг": {
+                1: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "221/3"}},
+                2: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "О. Топалэ", "room": "528/3"}},
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "221/3"}}
+            },
+            "Пятница": {
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "433/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}}
+            }
         }
     },
     "2": {
-        "Понедельник": {
-            1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
-            4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}}
-        },
-        "Вторник": {
-            1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            3: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}},
-            4: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "433/3"}}
-        },
-        "Среда": {
-            2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Наталья Карчева", "room": "229/3"}},
-            3: {
-                "odd": {"subject": "Физика", "type": "Лекция", "teacher": "Виорел Дущак", "room": "425/4"},
-                "even": {"subject": "Биология", "type": "Лекция", "teacher": "Вадим Русу", "room": "425/4"}
+        "1": {
+            "Понедельник": {
+                1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {
+                    "odd": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "411/4"},
+                    "even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}
+                }
             },
-            4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Лиля Соловей", "room": "127"}},
-            5: {"all": {"subject": "География", "type": "Лекция", "teacher": "Марчел Ревенко", "room": "401/3"}}
+            "Вторник": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}}
+            },
+            "Среда": {
+                2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "229/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
+            },
+            "Четверг": {
+                1: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}},
+                2: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "433/3"}},
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"odd": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "221/3"}},
+                5: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Л. Соловей", "room": "528/3"}}
+            },
+            "Пятница": {
+                1: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "527/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}}
+            }
         },
-        "Четверг": {
-            1: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}},
-            2: {"all": {"subject": "География", "type": "Семинар", "teacher": "Марчел Ревенко", "room": "433/3"}},
-            3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "Ольга Вулпе", "room": "127/3"}},
-            4: {"odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"}},
-            5: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Лиля Соловей", "room": "528/3"}}
-        },
-        "Пятница": {
-            2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}}
+        "2": {
+            "Понедельник": {
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "М. Калкей", "room": "527/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {
+                    "odd": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "411/4"},
+                    "even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}
+                }
+            },
+            "Вторник": {
+                2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "229/3"}},
+                3: {"odd": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}},
+                4: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}}
+            },
+            "Среда": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
+            },
+            "Четверг": {
+                1: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}},
+                2: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "433/3"}},
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"odd": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "221/3"}},
+                5: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Л. Соловей", "room": "528/3"}}
+            },
+            "Пятница": {
+                1: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "527/3"}},
+                3: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                4: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "М. Калкей", "room": "233/3"}}
+            }
         }
     },
     "3": {
-        "Понедельник": {
-            2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Марчела Калкей", "room": "527/3"}},
-            3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
-            4: {
-                "odd": {"subject": "Физика", "type": "Семинар", "teacher": "Виорел Дущак", "room": "433/3"},
-                "even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}
+        "1": {
+            "Понедельник": {
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "М. Калкей", "room": "527/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}},
+                5: {"even": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
             },
-            5: {"even": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
-        },
-        "Вторник": {
-            2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Наталья Карчева", "room": "229/3"}},
-            3: {
-                "odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"},
-                "even": {"subject": "Физика", "type": "Семинар", "teacher": "Виорел Дущак", "room": "433/3"}
+            "Вторник": {
+                2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "229/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"},
+                    "even": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "122/4"}
+                },
+                4: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}}
             },
-            4: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}}
-        },
-        "Среда": {
-            1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            3: {
-                "odd": {"subject": "Физика", "type": "Лекция", "teacher": "Виорел Дущак", "room": "425/4"},
-                "even": {"subject": "Биология", "type": "Лекция", "teacher": "Вадим Русу", "room": "425/4"}
+            "Среда": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
             },
-            4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Лиля Соловей", "room": "127"}},
-            5: {"all": {"subject": "География", "type": "Лекция", "teacher": "Марчел Ревенко", "room": "401/3"}}
-        },
-        "Четверг": {
-            3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "Ольга Вулпе", "room": "127/3"}},
-            4: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Лиля Соловей", "room": "528/3"}},
-            5: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "221/3"}}
-        },
-        "Пятница": {
-            1: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "527/3"}},
-            3: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            4: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Марчела Калкей", "room": "233/3"}}
-        }
-    },
-    "4": {
-        "Понедельник": {
-            2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Наталья Карчева", "room": "231/3"}},
-            3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
-            4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}}
-        },
-        "Вторник": {
-            1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Татьяна Цеплик", "room": "233/3"}},
-            3: {"even": {"subject": "Физика", "type": "Семинар", "teacher": "Виорел Дущак", "room": "433/3"}}
-        },
-        "Среда": {
-            3: {
-                "odd": {"subject": "Физика", "type": "Лекция", "teacher": "Виорел Дущак", "room": "425/4"},
-                "even": {"subject": "Биология", "type": "Лекция", "teacher": "Вадим Русу", "room": "425/4"}
+            "Четверг": {
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Л. Соловей", "room": "528/3"}},
+                5: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "221/3"}}
             },
-            4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Лиля Соловей", "room": "127"}},
-            5: {"all": {"subject": "География", "type": "Лекция", "teacher": "Марчел Ревенко", "room": "401/3"}}
+            "Пятница": {
+                1: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "221/3"}},
+                2: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}},
+                3: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                4: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "М. Калкей", "room": "233/3"}}
+            }
         },
-        "Четверг": {
-            1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
-            3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "Ольга Вулпе", "room": "127/3"}}
-        },
-        "Пятница": {
-            1: {"all": {"subject": "География", "type": "Семинар", "teacher": "Марчел Ревенко", "room": "221/3"}},
-            2: {"all": {"subject": "Русский язык", "type": "Семинар", "teacher": "Ольга Вулпе", "room": "433/3"}},
-            4: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}}
+        "2": {
+            "Понедельник": {
+                2: {"all": {"subject": "Информатика", "type": "Лабораторная", "teacher": "Н. Карчева", "room": "231/3"}},
+                3: {"all": {"subject": "История", "type": "Лекция", "teacher": "Александру Беженару", "room": "401/3"}},
+                4: {"even": {"subject": "Химия", "type": "Лекция", "teacher": "Ала Фулга", "room": "127/3"}},
+                5: {"even": {"subject": "Химия", "type": "Семинар", "teacher": "Ала Фулга", "room": "433/3"}}
+            },
+            "Вторник": {
+                1: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                2: {"all": {"subject": "Английский язык", "type": "Семинар", "teacher": "Т. Цеплик", "room": "233/3"}},
+                3: {
+                    "odd": {"subject": "Биология", "type": "Семинар", "teacher": "В. Русу", "room": "527/3"},
+                    "even": {"subject": "Физика", "type": "Семинар", "teacher": "В. Дущак", "room": "122/4"}
+                },
+                4: {"all": {"subject": "История", "type": "Семинар", "teacher": "Александру Беженару", "room": "527/3"}}
+            },
+            "Среда": {
+                3: {
+                    "odd": {"subject": "Биология", "type": "Лекция", "teacher": "В. Русу", "room": "425/4"},
+                    "even": {"subject": "Физика", "type": "Лекция", "teacher": "В. Дущак", "room": "425/4"}
+                },
+                4: {"all": {"subject": "Математика", "type": "Лекция", "teacher": "Л. Соловей", "room": "127/3"}},
+                5: {"all": {"subject": "География", "type": "Лекция", "teacher": "М. Ревенко", "room": "401/3"}}
+            },
+            "Четверг": {
+                1: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                2: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}},
+                3: {"all": {"subject": "Русская литература", "type": "Лекция", "teacher": "О. Вулпе", "room": "127/3"}},
+                4: {"all": {"subject": "Математика", "type": "Семинар", "teacher": "Л. Соловей", "room": "528/3"}},
+                5: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "221/3"}}
+            },
+            "Пятница": {
+                1: {"all": {"subject": "География", "type": "Семинар", "teacher": "М. Ревенко", "room": "221/3"}},
+                2: {"all": {"subject": "Русская литература", "type": "Семинар", "teacher": "О. Вулпе", "room": "433/3"}},
+                4: {"all": {"subject": "Румынский язык", "type": "Семинар", "teacher": "Лилия Долган", "room": "521/3"}}
+            }
         }
     }
 }
@@ -270,7 +359,6 @@ async def get_weather_week():
                         daily_data[date_str]["icon"] = item["weather"][0]["icon"]
 
             forecast_text = "📅 Прогноз в Кишиневе на 5 дней:\n\n"
-            # OpenWeather выдает максимум 5 дней в бесплатном тарифе
             for date_str, info in list(daily_data.items())[:5]:
                 formatted_date = datetime.datetime.strptime(date_str, "%Y-%m-%d").strftime("%d.%m")
                 min_temp, max_temp = round(info["min_temp"]), round(info["max_temp"])
@@ -278,6 +366,7 @@ async def get_weather_week():
                 forecast_text += f"🔹 {formatted_date}: от {min_temp}°C до {max_temp}°C, {emoji} {info['desc']}\n"
             
             return forecast_text
+
 # ================= АВТОРИЗАЦИЯ НА САЙТЕ USM =================
 async def login_to_usm(session, idnp: str):
     url = "https://studentcrd.usm.md/"
@@ -421,19 +510,26 @@ def format_day_schedule(group_id, subgroup_id, day):
     text = f"🎓 Группа {group_id} | 👥 Подгруппа {subgroup_id} | 📅 {day}\n🗓 Неделя: {week_label}\n\n"
     active_lessons = {}
     
-    for pair_num, variations in SCHEDULE[str(subgroup_id)].get(day, {}).items():
+    try:
+        day_schedule = SCHEDULE[str(group_id)][str(subgroup_id)].get(day, {})
+    except KeyError:
+        day_schedule = {}
+    
+    for pair_num, variations in day_schedule.items():
         if "all" in variations: active_lessons[pair_num] = variations["all"]
         elif week_type in variations: active_lessons[pair_num] = variations[week_type]
             
     if not active_lessons: return text + "В этот день пар нет! 🎉 Выходной."
         
-    for pair_num in range(min(active_lessons.keys()), max(active_lessons.keys()) + 1):
+    # ИЗМЕНЕНИЕ ЗДЕСЬ: Цикл теперь всегда начинается с 1-й пары, чтобы выводить "Окно", если день начинается не с первой
+    for pair_num in range(1, max(active_lessons.keys()) + 1):
         time_str = TIMES.get(pair_num, "")
         if pair_num in active_lessons:
             l = active_lessons[pair_num]
             text += f"{pair_num}. 🕒 {time_str}\n📚 {l['subject']} ({l['type']})\n👨‍🏫 {l['teacher']}\n🚪 Аудитория: {l['room']}\n\n"
         else:
             text += f"{pair_num}. 🕒 {time_str}\n🪟 Окно (свободная пара)\n\n"
+            
     return text.strip()
 
 # ================= КЛАВИАТУРЫ =================
@@ -452,8 +548,6 @@ def get_subgroups_kb(group_id):
     return InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="👥 Подгруппа 1", callback_data=f"subgroup_{group_id}_1"),
          InlineKeyboardButton(text="👥 Подгруппа 2", callback_data=f"subgroup_{group_id}_2")],
-        [InlineKeyboardButton(text="👥 Подгруппа 3", callback_data=f"subgroup_{group_id}_3"),
-         InlineKeyboardButton(text="👥 Подгруппа 4", callback_data=f"subgroup_{group_id}_4")],
         [InlineKeyboardButton(text="🔙 Назад", callback_data="back_main")]
     ])
 
@@ -470,16 +564,15 @@ def get_days_kb(group_id, subgroup_id):
 # ================= ХЭНДЛЕРЫ =================
 @dp.message(CommandStart())
 async def cmd_start(message: Message, state: FSMContext):
-    await sync_user_to_db(message.from_user.id) # Добавляем юзера в БД канала
+    await sync_user_to_db(message.from_user.id) 
     await state.clear()
     await message.answer("🏛 Добро пожаловать в расписание USM!\n\nВыберите нужный раздел из меню:", reply_markup=get_main_kb())
 
-# --- Первоначальная настройка Базы Данных ---
 @dp.channel_post(F.text == "/init_db")
 async def init_db_in_channel(message: Message):
     channel_id = message.chat.id
-    msg = await message.answer(f"USERS_DB:\n{ADMIN_ID}") # Создаем сообщение с твоим ID
-    await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) # Закрепляем его
+    msg = await message.answer(f"USERS_DB:\n{ADMIN_ID}")
+    await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) 
     await message.answer(
         f"✅ База данных успешно создана и закреплена!\n\n"
         f"Зайди на Render.com, открой настройки проекта (Environment) и добавь новую переменную:\n"
@@ -487,7 +580,6 @@ async def init_db_in_channel(message: Message):
         f"Значение: `{channel_id}`", parse_mode="Markdown"
     )
 
-# --- Команда для админской рассылки ---
 @dp.message(F.text.startswith("/broadcast"))
 async def cmd_broadcast(message: Message):
     if message.from_user.id != ADMIN_ID: return 
@@ -506,7 +598,6 @@ async def cmd_broadcast(message: Message):
             
     await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
 
-# --- Хэндлеры журнала ---
 @dp.callback_query(F.data.in_(["open_journal_freq", "open_journal_eval"]))
 async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     if callback.data == "open_journal_freq": await state.set_state(JournalState.waiting_for_idnp_freq)
@@ -542,7 +633,6 @@ async def process_idnp_eval(message: Message, state: FSMContext):
     await state.clear()
     await wait_msg.edit_text(result, reply_markup=get_main_kb(), parse_mode="HTML")
 
-# --- Хэндлеры расписания ---
 @dp.callback_query(F.data.startswith("group_"))
 async def select_group(callback: CallbackQuery):
     group_id = callback.data.split("_")[1]
@@ -603,7 +693,7 @@ def start_web_server():
 
 # ================= ЗАПУСК =================
 async def main():
-    await load_db_from_channel() # Загружаем БД перед стартом
+    await load_db_from_channel() 
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
