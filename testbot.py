@@ -8,7 +8,7 @@ from flask import Flask
 from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import Message, CallbackQuery, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -464,7 +464,7 @@ async def fetch_journal_absences(idnp: str) -> str:
         
         if not attendance_dict: return "Данные о посещаемости отсутствуют."
         
-        final_text = f"📊 <b>Посещаемость и баллы (лимит пропусков 33.3%):</b>\n\n"
+        final_text = f"📊 <b>Посещаемость и баллы:</b>\n\n"
         
         for (subj, teacher), logs in attendance_dict.items():
             header = f"📖 <b>{subj}</b>\n👨‍🏫 <i>{teacher}</i>"
@@ -546,6 +546,9 @@ def format_day_schedule(group_id, subgroup_id, day):
 # ================= КЛАВИАТУРЫ =================
 def get_main_kb():
     return InlineKeyboardMarkup(inline_keyboard=[
+        # Кнопка для Mini App с обновленным текстом
+        [InlineKeyboardButton(text="📱 Открыть приложение", web_app=WebAppInfo(url="https://usmorarapp.vercel.app/"))],
+        
         [InlineKeyboardButton(text="🎓 Группа 1", callback_data="group_1"), 
          InlineKeyboardButton(text="🎓 Группа 2", callback_data="group_2"),
          InlineKeyboardButton(text="🎓 Группа 3", callback_data="group_3")],
@@ -577,7 +580,14 @@ def get_days_kb(group_id, subgroup_id):
 async def cmd_start(message: Message, state: FSMContext):
     await sync_user_to_db(message.from_user.id) 
     await state.clear()
-    await message.answer("🏛 Добро пожаловать в расписание USM!\n\nВыберите нужный раздел из меню:", reply_markup=get_main_kb())
+    
+    welcome_text = (
+        "🏛 Добро пожаловать в расписание USM!\n\n"
+        "📱Теперь все функции доступны в приложении.\n\n"
+        "Выберите нужный раздел из меню:"
+    )
+    
+    await message.answer(welcome_text, reply_markup=get_main_kb())
 
 @dp.channel_post(F.text == "/init_db")
 async def init_db_in_channel(message: Message):
@@ -610,7 +620,7 @@ async def ask_idnp(callback: CallbackQuery, state: FSMContext):
     else: await state.set_state(JournalState.waiting_for_idnp_eval)
         
     await callback.message.edit_text(
-        text="Введите ваш IDNP (Задняя часть паспорта):",
+        text="Введите ваш IDNP (Задняя часть паспорта).",
         reply_markup=InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="🔙 Отмена", callback_data="back_main")]])
     )
     await callback.answer()
@@ -677,7 +687,14 @@ async def show_weather_week(callback: CallbackQuery):
 @dp.callback_query(F.data == "back_main")
 async def back_to_main(callback: CallbackQuery, state: FSMContext):
     await state.clear() 
-    await callback.message.edit_text(text="🏛 Расписание USM\n\nВыберите раздел:", reply_markup=get_main_kb())
+    
+    welcome_text = (
+        "🏛 Расписание USM\n\n"
+        "📱Теперь все функции доступны в приложении.\n\n"
+        "Выберите раздел:"
+    )
+    
+    await callback.message.edit_text(text=welcome_text, reply_markup=get_main_kb())
     await callback.answer()
 
 # ================= МИКРО-СЕРВЕР ДЛЯ RENDER =================
