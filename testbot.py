@@ -1,6 +1,5 @@
 import asyncio
 import os
-import re
 import threading
 from flask import Flask
 from dotenv import load_dotenv
@@ -20,77 +19,58 @@ DB_CHANNEL_ID = os.getenv("DB_CHANNEL_ID")
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# Множество для хранения ID пользователей в оперативной памяти
 known_users = set()
 
 
 # ================= ЛОГИКА БАЗЫ ДАННЫХ TELEGRAM =================
 async def load_db_from_channel():
-    """Загружает ID пользователей из закрепленного сообщения в канале при старте бота."""
-    if not DB_CHANNEL_ID:
-        print("❌ ОШИБКА: DB_CHANNEL_ID не указан в .env")
+    if not DB_CHANNEL_ID: 
+        print("❌ DB_CHANNEL_ID не найден в .env")
         return
         
     try:
-        # Очищаем ID от случайных кавычек из .env
-        clean_channel_id = str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip()
-        chat = await bot.get_chat(clean_channel_id)
-        
-        # Получаем закрепленное сообщение
+        # Для приватных групп ID обязан быть целым числом (int)
+        chat_id = int(str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip())
+        chat = await bot.get_chat(chat_id)
         pinned = chat.pinned_message
         
+        # Читаем базу точь-в-точь как было в твоем оригинальном коде
         if pinned and pinned.text and "USERS_DB" in pinned.text:
-            # Ищем ВСЕ последовательности цифр в тексте (надежный способ)
-            ids = re.findall(r'\d+', pinned.text)
-            
+            ids = pinned.text.split("\n")[1:]
             for uid in ids:
-                # Фильтруем случайные цифры (ID обычно длинные)
-                if len(uid) > 5:
-                    known_users.add(int(uid))
-                    
-            print(f"✅ База данных успешно загружена! В ней {len(known_users)} пользователей.")
+                if uid.strip().isdigit():
+                    known_users.add(int(uid.strip()))
+            print(f"✅ База данных загружена: {len(known_users)} пользователей.")
         else:
-            print("❌ В канале нет текстового закрепленного сообщения 'USERS_DB'. Напишите в канал /init_db")
-            
+            print("❌ Закрепленное сообщение с базой 'USERS_DB' не найдено.")
     except Exception as e:
-        print(f"❌ Критическая ошибка при загрузке БД из канала: {e}")
+        print(f"❌ Ошибка загрузки БД: {e}")
 
 
 async def sync_user_to_db(user_id: int):
-    """Добавляет нового пользователя в канал, если его там еще нет."""
-    if user_id in known_users: 
-        return
-        
+    if user_id in known_users: return
     known_users.add(user_id)
-    if not DB_CHANNEL_ID: 
-        return
+    if not DB_CHANNEL_ID: return
     
     try:
-        clean_channel_id = str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip()
-        chat = await bot.get_chat(clean_channel_id)
+        # Для приватных групп ID обязан быть целым числом (int)
+        chat_id = int(str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip())
+        chat = await bot.get_chat(chat_id)
         pinned = chat.pinned_message
         
         if pinned and pinned.text and "USERS_DB" in pinned.text:
             if str(user_id) not in pinned.text:
                 new_text = pinned.text + f"\n{user_id}"
-                
-                # Лимит Telegram на длину сообщения - 4096 символов
                 if len(new_text) < 4000:
-                    await bot.edit_message_text(
-                        chat_id=clean_channel_id, 
-                        message_id=pinned.message_id, 
-                        text=new_text
-                    )
+                    await bot.edit_message_text(chat_id=chat_id, message_id=pinned.message_id, text=new_text)
     except Exception as e:
-        print(f"❌ Ошибка при добавлении юзера {user_id} в канал: {e}")
+        print(f"❌ Ошибка сохранения юзера: {e}")
 
 
 # ================= ХЭНДЛЕРЫ =================
-
-# 1. Приветствие и кнопка Mini App
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    # Сохраняем пользователя в БД для рассылок
+    # При старте пользователь автоматически добавляется в БД
     await sync_user_to_db(message.from_user.id) 
     
     markup = InlineKeyboardMarkup(inline_keyboard=[
@@ -106,34 +86,29 @@ async def cmd_start(message: Message):
     await message.answer(welcome_text, reply_markup=markup)
 
 
-# 2. Создание базы данных (Нужно написать /init_db прямо в канал)
+# Работает и в группах (@dp.message), и в каналах (@dp.channel_post)
+@dp.message(F.text == "/init_db")
 @dp.channel_post(F.text == "/init_db")
 async def init_db_in_channel(message: Message):
-    channel_id = message.chat.id
+    chat_id = message.chat.id
     msg = await message.answer(f"USERS_DB:\n{ADMIN_ID}")
-    await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) 
-    await message.answer(f"✅ База данных успешно создана и закреплена!\nЗапишите этот ID в переменные окружения Render как `DB_CHANNEL_ID`.", parse_mode="Markdown")
+    await bot.pin_chat_message(chat_id=chat_id, message_id=msg.message_id) 
+    await message.answer(f"✅ База данных успешно создана и закреплена!\nУбедись, что этот ID ({chat_id}) указан как `DB_CHANNEL_ID`.", parse_mode="Markdown")
 
 
-# 3. Ручная рассылка (текст, фото, кружочки и т.д.)
 @dp.message(F.text.startswith("/broadcast") | F.caption.startswith("/broadcast"))
 async def cmd_broadcast(message: Message):
-    # Защита: только ты можешь делать рассылку
-    if message.from_user.id != ADMIN_ID: 
-        return 
+    if message.from_user.id != ADMIN_ID: return 
     
     count = 0
     known_users_list = list(known_users) 
     
-    # Способ А: Если ты сделал Reply (Ответить) на готовый пост
     if message.reply_to_message:
         for user_id in known_users_list:
             try:
                 await message.reply_to_message.copy_to(chat_id=user_id)
                 count += 1
             except Exception: pass
-            
-    # Способ Б: Если ты написал команду сразу с текстом или прикрепил к фото
     else:
         content = (message.text or message.caption or "").replace("/broadcast", "").strip()
         has_media = bool(message.photo or message.video or message.document or message.animation or message.voice or message.audio)
@@ -161,12 +136,12 @@ async def cmd_broadcast(message: Message):
     await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
 
 
-# ================= МИКРО-СЕРВЕР ДЛЯ RENDER (Keep-alive) =================
+# ================= МИКРО-СЕРВЕР ДЛЯ RENDER =================
 app = Flask(__name__)
 
 @app.route('/')
 def home(): 
-    return "USM Bot is running!"
+    return "USM Bot is running on Render!"
 
 def run_web():
     port = int(os.environ.get("PORT", 10000))
@@ -180,11 +155,9 @@ def start_web_server():
     t.start()
 
 
-# ================= ЗАПУСК БОТА =================
+# ================= ЗАПУСК =================
 async def main():
-    # Загружаем базу перед стартом бота
     await load_db_from_channel() 
-    
     print("🚀 Бот запущен и готов к работе!")
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
