@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 
 load_dotenv()
 
@@ -77,21 +77,32 @@ async def init_db_in_channel(message: Message):
     await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) 
     await message.answer(f"✅ База данных успешно создана и закреплена!\nЗапиши этот ID в переменные окружения Render как `DB_CHANNEL_ID`.", parse_mode="Markdown")
 
-@dp.message(F.text.startswith("/broadcast"))
+# Обновленный хэндлер для рассылки с фото
+@dp.message(Command("broadcast"))
 async def cmd_broadcast(message: Message):
     if message.from_user.id != ADMIN_ID: return 
     
-    text_to_send = message.text.replace("/broadcast", "").strip()
-    if not text_to_send:
-        await message.answer("⚠️ Введите текст. Пример: `/broadcast Всем привет!`", parse_mode="Markdown")
+    # Достаем текст или подпись к фото
+    raw_text = message.text or message.caption or ""
+    text_to_send = raw_text.replace("/broadcast", "").strip()
+    
+    if not text_to_send and not message.photo:
+        await message.answer("⚠️ Введите текст или прикрепите фото с подписью. Пример: `/broadcast Всем привет!`", parse_mode="Markdown")
         return
         
     count = 0
     for user_id in list(known_users):
         try:
-            await bot.send_message(user_id, f"📢 <b>Оповещение:</b>\n\n{text_to_send}", parse_mode="HTML")
+            if message.photo:
+                # Берем фото в самом высоком качестве (последнее в списке)
+                photo_id = message.photo[-1].file_id
+                caption = f"📢 <b>Оповещение:</b>\n\n{text_to_send}" if text_to_send else "📢 <b>Оповещение</b>"
+                await bot.send_photo(chat_id=user_id, photo=photo_id, caption=caption, parse_mode="HTML")
+            else:
+                await bot.send_message(chat_id=user_id, text=f"📢 <b>Оповещение:</b>\n\n{text_to_send}", parse_mode="HTML")
             count += 1
-        except Exception: pass 
+        except Exception: 
+            pass 
             
     await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
 
