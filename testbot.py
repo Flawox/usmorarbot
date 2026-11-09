@@ -77,21 +77,49 @@ async def init_db_in_channel(message: Message):
     await bot.pin_chat_message(chat_id=channel_id, message_id=msg.message_id) 
     await message.answer(f"✅ База данных успешно создана и закреплена!.", parse_mode="Markdown")
 
-@dp.message(F.text.startswith("/broadcast"))
+@dp.message(F.text.startswith("/broadcast") | F.caption.startswith("/broadcast"))
 async def cmd_broadcast(message: Message):
     if message.from_user.id != ADMIN_ID: return 
     
-    text_to_send = message.text.replace("/broadcast", "").strip()
-    if not text_to_send:
-        await message.answer("⚠️ Введите текст. Пример: `/broadcast Всем привет!`", parse_mode="Markdown")
-        return
-        
     count = 0
-    for user_id in list(known_users):
-        try:
-            await bot.send_message(user_id, f"📢 <b>Оповещение:</b>\n\n{text_to_send}", parse_mode="HTML")
-            count += 1
-        except Exception: pass 
+    known_users_list = list(known_users) # Предполагается, что known_users у тебя определен где-то выше
+    
+    # 1. Если это ответ на сообщение (Reply)
+    if message.reply_to_message:
+        for user_id in known_users_list:
+            try:
+                await message.reply_to_message.copy_to(chat_id=user_id)
+                count += 1
+            except Exception: pass
+            
+    # 2. Если это команда с текстом или медиа
+    else:
+        # Достаем текст или подпись к медиа
+        content = (message.text or message.caption or "").replace("/broadcast", "").strip()
+        has_media = bool(message.photo or message.video or message.document or message.animation)
+        
+        if not content and not has_media:
+            await message.answer(
+                "⚠️ *Внимание!*\n"
+                "Введите текст или прикрепите медиа.\n"
+                "Пример: `/broadcast Всем привет!`\n"
+                "Или ответьте на готовое сообщение командой `/broadcast`", 
+                parse_mode="Markdown"
+            )
+            return
+
+        for user_id in known_users_list:
+            try:
+                if has_media:
+                    # Рассылка картинки/видео с новым текстом (без команды)
+                    # Если content пустой, отправляем медиа без подписи
+                    caption = f"📢 <b>Оповещение:</b>\n\n{content}" if content else "📢 <b>Оповещение</b>"
+                    await message.copy_to(chat_id=user_id, caption=caption, parse_mode="HTML")
+                else:
+                    # Обычная текстовая рассылка
+                    await bot.send_message(chat_id=user_id, text=f"📢 <b>Оповещение:</b>\n\n{content}", parse_mode="HTML")
+                count += 1
+            except Exception: pass 
             
     await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
 
