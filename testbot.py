@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 import threading
 from flask import Flask
 from dotenv import load_dotenv
@@ -7,7 +8,7 @@ from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, F
 from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.types.web_app_info import WebAppInfo
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 
 load_dotenv()
 
@@ -21,39 +22,57 @@ dp = Dispatcher()
 
 known_users = set()
 
-
-# ================= ЛОГИКА БАЗЫ ДАННЫХ TELEGRAM =================
+# ================= ЛОГИКА БАЗЫ ДАННЫХ =================
 async def load_db_from_channel():
+    print("=== НАЧАЛО ЗАГРУЗКИ БАЗЫ ДАННЫХ ===")
     if not DB_CHANNEL_ID: 
-        print("❌ DB_CHANNEL_ID не найден в .env")
+        print("❌ ОШИБКА: DB_CHANNEL_ID не найден. Проверь переменные окружения (.env)")
         return
         
     try:
-        # Для приватных групп ID обязан быть целым числом (int)
-        chat_id = int(str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip())
-        chat = await bot.get_chat(chat_id)
-        pinned = chat.pinned_message
+        # Очищаем ID от возможных кавычек и пробелов
+        chat_id_str = str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip()
+        print(f"Пытаюсь подключиться к чату с ID: {chat_id_str}")
         
-        # Читаем базу точь-в-точь как было в твоем оригинальном коде
-        if pinned and pinned.text and "USERS_DB" in pinned.text:
-            ids = pinned.text.split("\n")[1:]
+        chat_id = int(chat_id_str)
+        chat = await bot.get_chat(chat_id)
+        print(f"✅ Чат найден! Название: {chat.title} (Тип: {chat.type})")
+        
+        pinned = chat.pinned_message
+        if not pinned:
+            print("❌ В этом чате НЕТ закрепленных сообщений (или бот их не видит).")
+            return
+            
+        print(f"✅ Закрепленное сообщение найдено. ID: {pinned.message_id}")
+        
+        if not pinned.text:
+            print("❌ Закрепленное сообщение НЕ содержит текста.")
+            return
+
+        print(f"Текст сообщения: {pinned.text[:30]}...")
+        
+        if "USERS_DB" in pinned.text:
+            # Ищем все числа длиннее 5 символов (надежный способ, чтобы пробелы не мешали)
+            ids = re.findall(r'\d{6,}', pinned.text)
             for uid in ids:
-                if uid.strip().isdigit():
-                    known_users.add(int(uid.strip()))
-            print(f"✅ База данных загружена: {len(known_users)} пользователей.")
+                known_users.add(int(uid))
+            print(f"🎉 УСПЕХ! База данных загружена: {len(known_users)} пользователей.")
         else:
-            print("❌ Закрепленное сообщение с базой 'USERS_DB' не найдено.")
+            print("❌ В закрепленном сообщении нет слова 'USERS_DB'.")
+            
     except Exception as e:
-        print(f"❌ Ошибка загрузки БД: {e}")
+        print(f"❌ КРИТИЧЕСКАЯ ОШИБКА загрузки БД: {type(e).__name__} - {e}")
+    print("=== КОНЕЦ ЗАГРУЗКИ БАЗЫ ДАННЫХ ===\n")
 
 
 async def sync_user_to_db(user_id: int):
-    if user_id in known_users: return
+    if user_id in known_users: 
+        return
     known_users.add(user_id)
-    if not DB_CHANNEL_ID: return
+    if not DB_CHANNEL_ID: 
+        return
     
     try:
-        # Для приватных групп ID обязан быть целым числом (int)
         chat_id = int(str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip())
         chat = await bot.get_chat(chat_id)
         pinned = chat.pinned_message
@@ -63,14 +82,55 @@ async def sync_user_to_db(user_id: int):
                 new_text = pinned.text + f"\n{user_id}"
                 if len(new_text) < 4000:
                     await bot.edit_message_text(chat_id=chat_id, message_id=pinned.message_id, text=new_text)
+                    print(f"✅ Новый пользователь {user_id} добавлен в базу.")
     except Exception as e:
-        print(f"❌ Ошибка сохранения юзера: {e}")
+        print(f"❌ Ошибка сохранения юзера {user_id}: {e}")
 
 
 # ================= ХЭНДЛЕРЫ =================
+
+# --- СЕКРЕТНАЯ КОМАНДА ДЛЯ ДИАГНОСТИКИ ---
+@dp.message(Command("debug"))
+async def cmd_debug(message: Message):
+    if message.from_user.id != ADMIN_ID:
+        return
+        
+    await message.answer("🔍 Начинаю диагностику базы данных...")
+    if not DB_CHANNEL_ID:
+        await message.answer("❌ `DB_CHANNEL_ID` пустой!")
+        return
+        
+    try:
+        chat_id = int(str(DB_CHANNEL_ID).replace('"', '').replace("'", "").strip())
+        chat = await bot.get_chat(chat_id)
+        pinned = chat.pinned_message
+        
+        report = f"✅ **Чат найден:** {chat.title}\n"
+        if pinned:
+            report += f"✅ **Закреп найдено** (ID {pinned.message_id})\n"
+            if pinned.text:
+                report += f"📝 **Начало текста:** `{pinned.text[:40]}`...\n"
+                if "USERS_DB" in pinned.text:
+                    ids = re.findall(r'\d{6,}', pinned.text)
+                    report += f"🎉 **Найдено ID:** {len(ids)} шт.\n"
+                else:
+                    report += "❌ Слово `USERS_DB` не найдено в тексте!"
+            else:
+                report += "❌ Сообщение пустое (нет текста)!"
+        else:
+            report += "❌ Бот не видит закрепленных сообщений в этом чате!"
+            
+        await message.answer(report, parse_mode="Markdown")
+        # Принудительно перезагружаем базу
+        await load_db_from_channel()
+        await message.answer(f"♻️ База перезагружена. Сейчас в памяти юзеров: {len(known_users)}")
+        
+    except Exception as e:
+        await message.answer(f"❌ **Ошибка:** `{e}`", parse_mode="Markdown")
+
+
 @dp.message(CommandStart())
 async def cmd_start(message: Message):
-    # При старте пользователь автоматически добавляется в БД
     await sync_user_to_db(message.from_user.id) 
     
     markup = InlineKeyboardMarkup(inline_keyboard=[
@@ -82,11 +142,9 @@ async def cmd_start(message: Message):
         "📱 Теперь все функции доступны в нашем приложении.\n"
         "Нажмите на кнопку ниже, чтобы открыть его."
     )
-    
     await message.answer(welcome_text, reply_markup=markup)
 
 
-# Работает и в группах (@dp.message), и в каналах (@dp.channel_post)
 @dp.message(F.text == "/init_db")
 @dp.channel_post(F.text == "/init_db")
 async def init_db_in_channel(message: Message):
@@ -99,7 +157,6 @@ async def init_db_in_channel(message: Message):
 @dp.message(F.text.startswith("/broadcast") | F.caption.startswith("/broadcast"))
 async def cmd_broadcast(message: Message):
     if message.from_user.id != ADMIN_ID: return 
-    
     count = 0
     known_users_list = list(known_users) 
     
@@ -114,13 +171,7 @@ async def cmd_broadcast(message: Message):
         has_media = bool(message.photo or message.video or message.document or message.animation or message.voice or message.audio)
         
         if not content and not has_media:
-            await message.answer(
-                "⚠️ *Внимание!*\n"
-                "Введите текст или прикрепите медиа.\n"
-                "Пример: `/broadcast Всем привет!`\n"
-                "Или ответьте на готовое сообщение командой `/broadcast`", 
-                parse_mode="Markdown"
-            )
+            await message.answer("⚠️ Введите текст или прикрепите медиа.\nПример: `/broadcast Текст`")
             return
 
         for user_id in known_users_list:
@@ -136,12 +187,10 @@ async def cmd_broadcast(message: Message):
     await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
 
 
-# ================= МИКРО-СЕРВЕР ДЛЯ RENDER =================
+# ================= МИКРО-СЕРВЕР =================
 app = Flask(__name__)
-
 @app.route('/')
-def home(): 
-    return "USM Bot is running on Render!"
+def home(): return "USM Bot is running!"
 
 def run_web():
     port = int(os.environ.get("PORT", 10000))
@@ -158,7 +207,7 @@ def start_web_server():
 # ================= ЗАПУСК =================
 async def main():
     await load_db_from_channel() 
-    print("🚀 Бот запущен и готов к работе!")
+    print("🚀 Бот готов к работе!")
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot)
 
