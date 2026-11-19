@@ -1,3 +1,35 @@
+import asyncio
+import os
+import threading
+from flask import Flask
+from dotenv import load_dotenv
+
+from aiogram import Bot, Dispatcher, F
+from aiogram.types import Message, InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.filters import CommandStart, Command
+
+load_dotenv()
+
+# ================= НАСТРОЙКИ =================
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+ADMIN_ID = 7195495745  # Твой Telegram ID
+DB_CHANNEL_ID = os.getenv("DB_CHANNEL_ID")
+
+bot = Bot(token=BOT_TOKEN)
+dp = Dispatcher()
+
+known_users = set()
+
+# ================= ЛОГИКА БАЗЫ ДАННЫХ TELEGRAM =================
+async def load_db_from_channel():
+    if not DB_CHANNEL_ID: return
+    try:
+        chat = await bot.get_chat(DB_CHANNEL_ID)
+        pinned = chat.pinned_message
+        if pinned and "USERS_DB" in pinned.text:
+            ids = pinned.text.split("\n")[1:]
+            for uid in ids:
+                if uid.strip().isdigit():
                     known_users.add(int(uid.strip()))
             print(f"✅ База данных загружена: {len(known_users)} пользователей.")
     except Exception as e:
@@ -62,67 +94,3 @@ async def init_db_in_channel(message: Message):
     await message.answer(f"✅ База данных успешно создана и закреплена!\nЗапиши этот ID в переменные окружения Render как `DB_CHANNEL_ID`.", parse_mode="Markdown")
 
 # Обновленный хэндлер для рассылки с фото
-@dp.message(Command("broadcast"))
-async def cmd_broadcast(message: Message):
-    if message.from_user.id != ADMIN_ID: return 
-    
-    # Достаем текст или подпись к фото
-    raw_text = message.text or message.caption or ""
-    text_to_send = raw_text.replace("/broadcast", "").strip()
-    
-    if not text_to_send and not message.photo:
-        await message.answer("⚠️ Введите текст или прикрепите фото с подписью. Пример: `/broadcast Всем привет!`", parse_mode="Markdown")
-        return
-        
-    count = 0
-    for user_id in list(known_users):
-        try:
-            if message.photo:
-                # Берем фото в самом высоком качестве (последнее в списке)
-                photo_id = message.photo[-1].file_id
-                caption = f"📢 <b>Оповещение:</b>\n\n{text_to_send}" if text_to_send else "📢 <b>Оповещение</b>"
-                await bot.send_photo(chat_id=user_id, photo=photo_id, caption=caption, parse_mode="HTML")
-            else:
-                await bot.send_message(chat_id=user_id, text=f"📢 <b>Оповещение:</b>\n\n{text_to_send}", parse_mode="HTML")
-            count += 1
-        except Exception: 
-            pass 
-            
-    await message.answer(f"✅ Рассылка завершена! Отправлено {count} пользователям.")
-
-# ================= МИКРО-СЕРВЕР ДЛЯ RENDER =================
-app = Flask(__name__)
-
-@app.route('/')
-def home(): 
-    return "Bot is running on Render!"
-
-def run_web():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
-def start_web_server():
-    import logging
-    logging.getLogger('werkzeug').setLevel(logging.ERROR)
-    t = threading.Thread(target=run_web)
-    t.daemon = True
-    t.start()
-
-# ================= ЗАПУСК =================
-async def main():
-    await load_db_from_channel() 
-    
-    # Отправка сообщения в канал базы данных при запуске
-    if DB_CHANNEL_ID:
-        try:
-            await bot.send_message(
-                chat_id=DB_CHANNEL_ID,
-                text=f"🟢 База данных активна. Количество пользователей: {len(known_users)}"
-            )
-        except Exception as e:
-            print(f"❌ Ошибка отправки статуса в канал: {e}")
-            
-    print("Бот запущен")
-    await dp.start_polling(bot)
-
-if __name__ == "__main__":
